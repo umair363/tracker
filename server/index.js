@@ -1,20 +1,16 @@
-# STAGE 1: Build React
-FROM node:18-alpine AS build-step
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-RUN npm run build
+const express = require('express');
+const path = require('path');
+const app = express();
+const PORT = process.env.PORT || 8080;
 
-# STAGE 2: Run Express Server
-FROM node:18-alpine
-WORKDIR /app
-# Copy only what we need from the build stage
-COPY --from=build-step /app/dist ./dist
-COPY server/ ./server/
-COPY package*.json ./
-# Install production dependencies for the server
-RUN npm install --only=production
+// Serve static files from the React build
+app.use(express.static(path.join(__dirname, '../dist')));
 
-EXPOSE 8080
-CMD ["node", "server/index.js"]
+// All other routes → serve React's index.html (for client-side routing)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+});
