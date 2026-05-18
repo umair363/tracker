@@ -1,7 +1,8 @@
 // Basic API tests — run with: node tests/api.test.js
 const http = require('http');
 
-const API = process.env.API_URL || 'http://localhost:5000';
+const API = process.env.API_URL || 'http://127.0.0.1:5000';
+
 let passed = 0, failed = 0;
 
 async function request(path, opts = {}) {
