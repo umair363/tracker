@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # ─── PostgreSQL Database ──────────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: tracker-db
+    environment:
+      POSTGRES_DB: tracker
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - tracker-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─── Node.js Backend API ──────────────────────────────────────────────
+  backend:
+    build: ./backend
+    container_name: tracker-backend
+    image: umair363/roshan-safar-backend:latest
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: tracker
+      DB_USER: postgres
+      DB_PASSWORD: postgres123
+      PORT: 5000
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - tracker-net
+    restart: unless-stopped
+
+  # ─── React Frontend (Nginx) ──────────────────────────────────────────
+  frontend:
+    build: ./frontend
+    container_name: tracker-frontend
+    image: umair363/roshan-safar-frontend:latest
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - tracker-net
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+
+networks:
+  tracker-net:
+    driver: bridge
